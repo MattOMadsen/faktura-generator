@@ -13,6 +13,7 @@ app.use(express.json());
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
+app.locals.pool = pool;
 
 // Nodemailer opsætning
 const transporter = nodemailer.createTransport({
@@ -22,6 +23,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS,
   },
 });
+app.locals.transporter = transporter;
 
 // Test database-forbindelse
 pool.query('SELECT NOW()', (err, res) => {
@@ -36,6 +38,8 @@ pool.query('SELECT NOW()', (err, res) => {
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/customers', require('./routes/customers'));
+app.use('/api/pdf', require('./routes/pdf'));
+app.use('/api/settings', require('./routes/settings'));
 
 // Start server
 const PORT = process.env.PORT || 5000;
