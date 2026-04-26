@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { FileText, LayoutDashboard, Users, Settings, Menu, X, PlusCircle } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { FileText, LayoutDashboard, Users, Settings, Menu, X, PlusCircle, LogOut, User } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,6 +14,8 @@ const navItems = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="bg-primary text-white shadow-md">
@@ -25,7 +28,7 @@ export default function Navbar() {
 
           {/* Desktop */}
           <div className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+            {user && navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -39,6 +42,29 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {user ? (
+              <div className="flex items-center gap-3 ml-2 pl-2 border-l border-white/20">
+                <span className="text-sm text-white/80 flex items-center gap-1">
+                  <User size={14} />
+                  {user.email}
+                </span>
+                <button
+                  onClick={() => { logout(); navigate('/login'); }}
+                  className="flex items-center gap-1 px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+                >
+                  <LogOut size={16} />
+                  Log ud
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                <User size={16} />
+                Log ind
+              </Link>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -53,7 +79,7 @@ export default function Navbar() {
         {/* Mobile menu */}
         {mobileOpen && (
           <div className="md:hidden pb-3 space-y-1">
-            {navItems.map((item) => (
+            {user && navItems.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -68,6 +94,24 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {user ? (
+              <button
+                onClick={() => { logout(); navigate('/login'); setMobileOpen(false); }}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:bg-white/10 w-full"
+              >
+                <LogOut size={16} />
+                Log ud
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:bg-white/10"
+              >
+                <User size={16} />
+                Log ind
+              </Link>
+            )}
           </div>
         )}
       </div>

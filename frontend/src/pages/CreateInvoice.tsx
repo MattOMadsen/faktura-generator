@@ -2,8 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, FileText } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const API = 'http://localhost:5000/api';
+
+function authHeaders(token: string | null) {
+  return token
+    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' };
+}
 
 interface LineItem {
   id: string;
@@ -15,9 +22,12 @@ interface LineItem {
 export default function CreateInvoice() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { token } = useAuth();
+
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => fetch(`${API}/customers`).then(r => r.json()),
+    queryFn: () =>
+      fetch(`${API}/customers`, { headers: authHeaders(token) }).then((r) => r.json()),
   });
 
   const [customerId, setCustomerId] = useState('');
@@ -36,19 +46,20 @@ export default function CreateInvoice() {
     mutationFn: (payload: any) =>
       fetch(`${API}/invoices`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(token),
         body: JSON.stringify(payload),
-      }).then(r => r.json()),
+      }).then((r) => r.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       navigate('/invoices');
     },
   });
 
-  const addLine = () => setLineItems([...lineItems, { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0 }]);
-  const removeLine = (id: string) => setLineItems(lineItems.filter(l => l.id !== id));
+  const addLine = () =>
+    setLineItems([...lineItems, { id: crypto.randomUUID(), description: '', quantity: 1, unit_price: 0 }]);
+  const removeLine = (id: string) => setLineItems(lineItems.filter((l) => l.id !== id));
   const updateLine = (id: string, field: keyof LineItem, value: string | number) => {
-    setLineItems(lineItems.map(l => l.id === id ? { ...l, [field]: value } : l));
+    setLineItems(lineItems.map((l) => (l.id === id ? { ...l, [field]: value } : l)));
   };
 
   const subtotal = lineItems.reduce((s, l) => s + l.quantity * l.unit_price, 0);
@@ -74,7 +85,7 @@ export default function CreateInvoice() {
       customer_email: customerEmail,
       customer_address: customerAddress,
       customer_cvr: customerCvr,
-      line_items: lineItems.map(l => ({ ...l, line_total: l.quantity * l.unit_price })),
+      line_items: lineItems.map((l) => ({ ...l, line_total: l.quantity * l.unit_price })),
       subtotal,
       vat_total: vatTotal,
       total,
@@ -97,29 +108,57 @@ export default function CreateInvoice() {
             <div className="space-y-4">
               <div>
                 <label className="label">Vælg eksisterende kunde</label>
-                <select value={customerId} onChange={(e) => handleCustomerSelect(e.target.value)} className="input">
+                <select
+                  value={customerId}
+                  onChange={(e) => handleCustomerSelect(e.target.value)}
+                  className="input"
+                >
                   <option value="">-- Ny kunde --</option>
                   {customers.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="label">Navn *</label>
-                  <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="input" required />
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    className="input"
+                    required
+                  />
                 </div>
                 <div>
                   <label className="label">E-mail *</label>
-                  <input type="email" value={customerEmail} onChange={e => setCustomerEmail(e.target.value)} className="input" required />
+                  <input
+                    type="email"
+                    value={customerEmail}
+                    onChange={(e) => setCustomerEmail(e.target.value)}
+                    className="input"
+                    required
+                  />
                 </div>
                 <div className="sm:col-span-2">
                   <label className="label">Adresse</label>
-                  <input type="text" value={customerAddress} onChange={e => setCustomerAddress(e.target.value)} className="input" />
+                  <input
+                    type="text"
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    className="input"
+                  />
                 </div>
                 <div>
                   <label className="label">CVR</label>
-                  <input type="text" value={customerCvr} onChange={e => setCustomerCvr(e.target.value)} className="input" />
+                  <input
+                    type="text"
+                    value={customerCvr}
+                    onChange={(e) => setCustomerCvr(e.target.value)}
+                    className="input"
+                  />
                 </div>
               </div>
             </div>
@@ -136,7 +175,7 @@ export default function CreateInvoice() {
                     <input
                       type="text"
                       value={item.description}
-                      onChange={e => updateLine(item.id, 'description', e.target.value)}
+                      onChange={(e) => updateLine(item.id, 'description', e.target.value)}
                       className="input"
                       required
                     />
@@ -147,7 +186,7 @@ export default function CreateInvoice() {
                       type="number"
                       min="1"
                       value={item.quantity}
-                      onChange={e => updateLine(item.id, 'quantity', Number(e.target.value))}
+                      onChange={(e) => updateLine(item.id, 'quantity', Number(e.target.value))}
                       className="input"
                       required
                     />
@@ -159,13 +198,16 @@ export default function CreateInvoice() {
                       min="0"
                       step="0.01"
                       value={item.unit_price}
-                      onChange={e => updateLine(item.id, 'unit_price', Number(e.target.value))}
+                      onChange={(e) => updateLine(item.id, 'unit_price', Number(e.target.value))}
                       className="input"
                       required
                     />
                   </div>
                   <div className="sm:col-span-1 text-right font-medium text-gray-700 py-2.5">
-                    {(item.quantity * item.unit_price).toLocaleString('da-DK', { minimumFractionDigits: 2 })} DKK
+                    {(item.quantity * item.unit_price).toLocaleString('da-DK', {
+                      minimumFractionDigits: 2,
+                    })}{' '}
+                    DKK
                   </div>
                   <div className="sm:col-span-1">
                     <button
@@ -188,7 +230,12 @@ export default function CreateInvoice() {
           {/* Noter */}
           <div className="card">
             <label className="label">Noter</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} className="input" rows={3} />
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="input"
+              rows={3}
+            />
           </div>
         </div>
 
@@ -199,11 +246,21 @@ export default function CreateInvoice() {
             <div className="space-y-4">
               <div>
                 <label className="label">Forfaldsdato *</label>
-                <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} className="input" required />
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="input"
+                  required
+                />
               </div>
               <div>
                 <label className="label">Betalingsbetingelser (dage)</label>
-                <select value={paymentTerms} onChange={e => setPaymentTerms(e.target.value)} className="input">
+                <select
+                  value={paymentTerms}
+                  onChange={(e) => setPaymentTerms(e.target.value)}
+                  className="input"
+                >
                   <option value="7">7 dage</option>
                   <option value="14">14 dage</option>
                   <option value="30">30 dage</option>
@@ -229,11 +286,7 @@ export default function CreateInvoice() {
                 <span>{total.toLocaleString('da-DK', { minimumFractionDigits: 2 })} DKK</span>
               </div>
             </div>
-            <button
-              type="submit"
-              disabled={createMutation.isPending}
-              className="btn-primary w-full mt-6"
-            >
+            <button type="submit" disabled={createMutation.isPending} className="btn-primary w-full mt-6">
               <FileText size={18} />
               {createMutation.isPending ? 'Opretter...' : 'Opret faktura'}
             </button>

@@ -1,35 +1,21 @@
 const express = require('express');
 const router = express.Router();
+const { authMiddleware } = require('../middleware/auth');
+
+router.use(authMiddleware);
 
 // Hent alle kunder
 router.get('/', async (req, res) => {
   try {
     const pool = req.app.locals.pool;
     const result = await pool.query(
-      'SELECT * FROM customers ORDER BY name ASC'
+      'SELECT * FROM customers WHERE user_id = $1 ORDER BY name ASC',
+      [req.userId]
     );
     res.json(result.rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Kunne ikke hente kunder' });
-  }
-});
-
-// Hent en kunde
-router.get('/:id', async (req, res) => {
-  try {
-    const pool = req.app.locals.pool;
-    const result = await pool.query(
-      'SELECT * FROM customers WHERE id = $1',
-      [req.params.id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Kunde ikke fundet' });
-    }
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Kunne ikke hente kunde' });
   }
 });
 
@@ -39,9 +25,9 @@ router.post('/', async (req, res) => {
   try {
     const pool = req.app.locals.pool;
     const result = await pool.query(
-      `INSERT INTO customers (name, email, address, cvr, ean, phone, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [name, email, address, cvr, ean, phone, notes]
+      `INSERT INTO customers (user_id, name, email, address, cvr, ean, phone, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [req.userId, name, email, address, cvr, ean, phone, notes]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -64,8 +50,8 @@ router.patch('/:id', async (req, res) => {
         ean = COALESCE($5, ean),
         phone = COALESCE($6, phone),
         notes = COALESCE($7, notes)
-       WHERE id = $8 RETURNING *`,
-      [name, email, address, cvr, ean, phone, notes, req.params.id]
+       WHERE id = $8 AND user_id = $9 RETURNING *`,
+      [name, email, address, cvr, ean, phone, notes, req.params.id, req.userId]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Kunde ikke fundet' });
@@ -81,7 +67,7 @@ router.patch('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const pool = req.app.locals.pool;
-    await pool.query('DELETE FROM customers WHERE id = $1', [req.params.id]);
+    await pool.query('DELETE FROM customers WHERE id = $1 AND user_id = $2', [req.params.id, req.userId]);
     res.json({ message: 'Kunde slettet' });
   } catch (err) {
     console.error(err);

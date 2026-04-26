@@ -1,19 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Settings as SettingsIcon, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const API = 'http://localhost:5000/api';
 
+function authHeaders(token: string | null) {
+  return token
+    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+    : { 'Content-Type': 'application/json' };
+}
+
 export default function Settings() {
   const queryClient = useQueryClient();
+  const { token } = useAuth();
+
   const { data: settings, isLoading } = useQuery({
     queryKey: ['settings'],
-    queryFn: () => fetch(`${API}/settings/company`).then(r => r.json()),
+    queryFn: () => fetch(`${API}/settings/company`, { headers: authHeaders(token) }).then((r) => r.json()),
   });
 
   const [form, setForm] = useState({
-    company_name: '', company_address: '', company_cvr: '', company_email: '', company_phone: '',
-    bank_name: '', reg_number: '', account_number: '', payment_terms: '14', vat_rate: '25',
+    company_name: '',
+    company_address: '',
+    company_cvr: '',
+    company_email: '',
+    company_phone: '',
+    bank_name: '',
+    reg_number: '',
+    account_number: '',
+    payment_terms: '14',
+    vat_rate: '25',
   });
 
   useEffect(() => {
@@ -34,15 +51,16 @@ export default function Settings() {
   }, [settings]);
 
   const saveMutation = useMutation({
-    mutationFn: () => fetch(`${API}/settings/company`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...form,
-        payment_terms: Number(form.payment_terms),
-        vat_rate: Number(form.vat_rate),
+    mutationFn: () =>
+      fetch(`${API}/settings/company`, {
+        method: 'PUT',
+        headers: authHeaders(token),
+        body: JSON.stringify({
+          ...form,
+          payment_terms: Number(form.payment_terms),
+          vat_rate: Number(form.vat_rate),
+        }),
       }),
-    }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['settings'] }),
   });
 
@@ -63,23 +81,44 @@ export default function Settings() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="label">Firmanavn</label>
-                <input className="input" value={form.company_name} onChange={e => setForm({ ...form, company_name: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.company_name}
+                  onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="label">Adresse</label>
-                <input className="input" value={form.company_address} onChange={e => setForm({ ...form, company_address: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.company_address}
+                  onChange={(e) => setForm({ ...form, company_address: e.target.value })}
+                />
               </div>
               <div>
                 <label className="label">CVR-nummer</label>
-                <input className="input" value={form.company_cvr} onChange={e => setForm({ ...form, company_cvr: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.company_cvr}
+                  onChange={(e) => setForm({ ...form, company_cvr: e.target.value })}
+                />
               </div>
               <div>
                 <label className="label">Telefon</label>
-                <input className="input" value={form.company_phone} onChange={e => setForm({ ...form, company_phone: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.company_phone}
+                  onChange={(e) => setForm({ ...form, company_phone: e.target.value })}
+                />
               </div>
               <div>
                 <label className="label">E-mail</label>
-                <input type="email" className="input" value={form.company_email} onChange={e => setForm({ ...form, company_email: e.target.value })} />
+                <input
+                  type="email"
+                  className="input"
+                  value={form.company_email}
+                  onChange={(e) => setForm({ ...form, company_email: e.target.value })}
+                />
               </div>
             </div>
 
@@ -89,15 +128,27 @@ export default function Settings() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-3">
                 <label className="label">Bank</label>
-                <input className="input" value={form.bank_name} onChange={e => setForm({ ...form, bank_name: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.bank_name}
+                  onChange={(e) => setForm({ ...form, bank_name: e.target.value })}
+                />
               </div>
               <div>
                 <label className="label">Reg. nr.</label>
-                <input className="input" value={form.reg_number} onChange={e => setForm({ ...form, reg_number: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.reg_number}
+                  onChange={(e) => setForm({ ...form, reg_number: e.target.value })}
+                />
               </div>
               <div className="sm:col-span-2">
                 <label className="label">Konto nr.</label>
-                <input className="input" value={form.account_number} onChange={e => setForm({ ...form, account_number: e.target.value })} />
+                <input
+                  className="input"
+                  value={form.account_number}
+                  onChange={(e) => setForm({ ...form, account_number: e.target.value })}
+                />
               </div>
             </div>
 
@@ -107,7 +158,11 @@ export default function Settings() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="label">Standard betalingsbetingelser (dage)</label>
-                <select className="input" value={form.payment_terms} onChange={e => setForm({ ...form, payment_terms: e.target.value })}>
+                <select
+                  className="input"
+                  value={form.payment_terms}
+                  onChange={(e) => setForm({ ...form, payment_terms: e.target.value })}
+                >
                   <option value="7">7 dage</option>
                   <option value="14">14 dage</option>
                   <option value="30">30 dage</option>
@@ -116,7 +171,12 @@ export default function Settings() {
               </div>
               <div>
                 <label className="label">Standard momssats (%)</label>
-                <input type="number" className="input" value={form.vat_rate} onChange={e => setForm({ ...form, vat_rate: e.target.value })} />
+                <input
+                  type="number"
+                  className="input"
+                  value={form.vat_rate}
+                  onChange={(e) => setForm({ ...form, vat_rate: e.target.value })}
+                />
               </div>
             </div>
           </div>

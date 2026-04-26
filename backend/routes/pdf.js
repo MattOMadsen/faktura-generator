@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const puppeteer = require('puppeteer');
+const { authMiddleware } = require('../middleware/auth');
 
 function generateInvoiceHTML(invoice, company) {
   const items = invoice.line_items || [];
@@ -126,10 +127,13 @@ function generateInvoiceHTML(invoice, company) {
 }
 
 // Generer PDF
-router.post('/generate/:invoiceId', async (req, res) => {
+router.post('/generate/:invoiceId', authMiddleware, async (req, res) => {
   try {
     const pool = req.app.locals.pool;
-    const invoiceResult = await pool.query('SELECT * FROM invoices WHERE id = $1', [req.params.invoiceId]);
+    const invoiceResult = await pool.query(
+      'SELECT * FROM invoices WHERE id = $1 AND user_id = $2',
+      [req.params.invoiceId, req.userId]
+    );
     if (invoiceResult.rows.length === 0) {
       return res.status(404).json({ error: 'Faktura ikke fundet' });
     }
@@ -137,7 +141,7 @@ router.post('/generate/:invoiceId', async (req, res) => {
     const invoice = invoiceResult.rows[0];
     const companyResult = await pool.query(
       'SELECT * FROM company_settings WHERE user_id = $1 LIMIT 1',
-      [invoice.user_id || 1]
+      [req.userId]
     );
     const company = companyResult.rows[0] || {};
 
@@ -158,4 +162,4 @@ router.post('/generate/:invoiceId', async (req, res) => {
   }
 });
 
-module.exports = router;
+module.exports = { router, generateInvoiceHTML };

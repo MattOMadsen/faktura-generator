@@ -35,11 +35,13 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 // Ruter
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/templates', require('./routes/templates'));
 app.use('/api/customers', require('./routes/customers'));
-app.use('/api/pdf', require('./routes/pdf'));
+app.use('/api/pdf', require('./routes/pdf').router);
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/email', require('./routes/email'));
 
 // Start server
 const PORT = process.env.PORT || 5000;

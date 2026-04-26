@@ -1,23 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Users, TrendingUp, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { FileText, Users, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const API = 'http://localhost:5000/api';
 
+function authHeaders(token: string | null) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export default function Dashboard() {
+  const { token } = useAuth();
+
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices'],
-    queryFn: () => fetch(`${API}/invoices`).then(r => r.json()),
+    queryFn: () =>
+      fetch(`${API}/invoices`, { headers: authHeaders(token) }).then((r) => {
+        if (!r.ok) throw new Error('Kunne ikke hente fakturaer');
+        return r.json();
+      }),
   });
 
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => fetch(`${API}/customers`).then(r => r.json()),
+    queryFn: () =>
+      fetch(`${API}/customers`, { headers: authHeaders(token) }).then((r) => {
+        if (!r.ok) throw new Error('Kunne ikke hente kunder');
+        return r.json();
+      }),
   });
 
-  const totalRevenue = invoices.filter((i: any) => i.status === 'paid').reduce((s: number, i: any) => s + Number(i.total), 0);
-  const outstanding = invoices.filter((i: any) => i.status === 'unpaid').reduce((s: number, i: any) => s + Number(i.total), 0);
-  const overdue = invoices.filter((i: any) => i.status === 'unpaid' && new Date(i.due_date) < new Date());
+  const totalRevenue = invoices
+    .filter((i: any) => i.status === 'paid')
+    .reduce((s: number, i: any) => s + Number(i.total), 0);
+  const outstanding = invoices
+    .filter((i: any) => i.status === 'unpaid')
+    .reduce((s: number, i: any) => s + Number(i.total), 0);
+  const overdue = invoices.filter(
+    (i: any) => i.status === 'unpaid' && new Date(i.due_date) < new Date()
+  );
   const recentInvoices = invoices.slice(0, 5);
 
   const statCards = [
@@ -54,14 +75,19 @@ export default function Dashboard() {
             {overdue.length} forfaldne faktura{overdue.length > 1 ? 'er' : ''}
           </div>
           <div className="text-sm text-orange-600">
-            Total forfalden: <strong>{overdue.reduce((s: number, i: any) => s + Number(i.total), 0).toLocaleString('da-DK')} DKK</strong>
+            Total forfalden:{' '}
+            <strong>
+              {overdue.reduce((s: number, i: any) => s + Number(i.total), 0).toLocaleString('da-DK')} DKK
+            </strong>
           </div>
         </div>
       )}
 
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold">Seneste fakturaer</h2>
-        <Link to="/create" className="btn-primary text-sm">+ Opret faktura</Link>
+        <Link to="/create" className="btn-primary text-sm">
+          + Opret faktura
+        </Link>
       </div>
 
       <div className="card overflow-hidden">
@@ -69,7 +95,9 @@ export default function Dashboard() {
           <div className="text-center py-12 text-gray-400">
             <FileText size={40} className="mx-auto mb-3 opacity-50" />
             <p>Du har ingen fakturaer endnu</p>
-            <Link to="/create" className="btn-primary mt-4 inline-flex">Opret din første faktura</Link>
+            <Link to="/create" className="btn-primary mt-4 inline-flex">
+              Opret din første faktura
+            </Link>
           </div>
         ) : (
           <table className="w-full text-sm">
@@ -87,7 +115,9 @@ export default function Dashboard() {
                 <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
                   <td className="py-3 px-4 font-medium">{inv.invoice_number}</td>
                   <td className="py-3 px-4">{inv.customer_name}</td>
-                  <td className="py-3 px-4 text-right font-medium">{Number(inv.total).toLocaleString('da-DK',{minimumFractionDigits:2})} DKK</td>
+                  <td className="py-3 px-4 text-right font-medium">
+                    {Number(inv.total).toLocaleString('da-DK', { minimumFractionDigits: 2 })} DKK
+                  </td>
                   <td className="py-3 px-4 text-center">
                     <StatusBadge status={inv.status} dueDate={inv.due_date} />
                   </td>
@@ -106,16 +136,18 @@ export default function Dashboard() {
 
 function StatusBadge({ status, dueDate }: { status: string; dueDate: string }) {
   const isLate = status === 'unpaid' && new Date(dueDate) < new Date();
-  if (status === 'paid') return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-      <CheckCircle size={12} /> Betalt
-    </span>
-  );
-  if (isLate) return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-      <AlertTriangle size={12} /> Forfalden
-    </span>
-  );
+  if (status === 'paid')
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <CheckCircle size={12} /> Betalt
+      </span>
+    );
+  if (isLate)
+    return (
+      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
+        <AlertTriangle size={12} /> Forfalden
+      </span>
+    );
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
       <Clock size={12} /> Afventer

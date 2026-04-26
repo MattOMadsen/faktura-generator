@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const { authMiddleware } = require('../middleware/auth');
+
+router.use(authMiddleware);
 
 // Hent firma-indstillinger
 router.get('/company', async (req, res) => {
@@ -7,7 +10,7 @@ router.get('/company', async (req, res) => {
     const pool = req.app.locals.pool;
     const result = await pool.query(
       'SELECT * FROM company_settings WHERE user_id = $1 LIMIT 1',
-      [1]
+      [req.userId]
     );
     res.json(result.rows[0] || {});
   } catch (err) {
@@ -28,7 +31,7 @@ router.put('/company', async (req, res) => {
     const pool = req.app.locals.pool;
     const existing = await pool.query(
       'SELECT * FROM company_settings WHERE user_id = $1 LIMIT 1',
-      [1]
+      [req.userId]
     );
 
     let result;
@@ -43,7 +46,7 @@ router.put('/company', async (req, res) => {
         [
           company_name, company_address, company_cvr, company_email,
           company_phone, bank_name, reg_number, account_number,
-          payment_terms, vat_rate, 1
+          payment_terms, vat_rate, req.userId
         ]
       );
     } else {
@@ -54,7 +57,7 @@ router.put('/company', async (req, res) => {
           account_number, payment_terms, vat_rate
         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [
-          1, company_name, company_address, company_cvr,
+          req.userId, company_name, company_address, company_cvr,
           company_email, company_phone, bank_name, reg_number,
           account_number, payment_terms, vat_rate
         ]
