@@ -2,12 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { FileText, Users, CheckCircle, AlertTriangle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API = 'http://localhost:5000/api';
-
-function authHeaders(token: string | null) {
-  return token ? { Authorization: `Bearer ${token}` } : {};
-}
+import { API_URL, authHeaders } from '../lib/api';
 
 export default function Dashboard() {
   const { token } = useAuth();
@@ -15,7 +10,7 @@ export default function Dashboard() {
   const { data: invoices = [] } = useQuery({
     queryKey: ['invoices'],
     queryFn: () =>
-      fetch(`${API}/invoices`, { headers: authHeaders(token) }).then((r) => {
+      fetch(`${API_URL}/invoices`, { headers: authHeaders(token) }).then((r) => {
         if (!r.ok) throw new Error('Kunne ikke hente fakturaer');
         return r.json();
       }),
@@ -24,7 +19,7 @@ export default function Dashboard() {
   const { data: customers = [] } = useQuery({
     queryKey: ['customers'],
     queryFn: () =>
-      fetch(`${API}/customers`, { headers: authHeaders(token) }).then((r) => {
+      fetch(`${API_URL}/customers`, { headers: authHeaders(token) }).then((r) => {
         if (!r.ok) throw new Error('Kunne ikke hente kunder');
         return r.json();
       }),

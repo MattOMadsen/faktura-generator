@@ -1,16 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { FileText, Search, Download, CheckCircle, AlertTriangle, Clock, Trash2, Mail, Send } from 'lucide-react';
+import { FileText, Search, Download, CheckCircle, AlertTriangle, Clock, Trash2, Send } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-
-const API = 'http://localhost:5000/api';
-
-function authHeaders(token: string | null) {
-  return token
-    ? { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
-    : { 'Content-Type': 'application/json' };
-}
+import { API_URL, authHeaders } from '../lib/api';
 
 export default function Invoices() {
   const queryClient = useQueryClient();
@@ -22,7 +15,7 @@ export default function Invoices() {
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: () =>
-      fetch(`${API}/invoices`, { headers: authHeaders(token) }).then((r) => {
+      fetch(`${API_URL}/invoices`, { headers: authHeaders(token) }).then((r) => {
         if (!r.ok) throw new Error('Kunne ikke hente fakturaer');
         return r.json();
       }),
@@ -30,13 +23,13 @@ export default function Invoices() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) =>
-      fetch(`${API}/invoices/${id}`, { method: 'DELETE', headers: authHeaders(token) }),
+      fetch(`${API_URL}/invoices/${id}`, { method: 'DELETE', headers: authHeaders(token) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['invoices'] }),
   });
 
   const statusMutation = useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) =>
-      fetch(`${API}/invoices/${id}/status`, {
+      fetch(`${API_URL}/invoices/${id}/status`, {
         method: 'PATCH',
         headers: authHeaders(token),
         body: JSON.stringify({ status }),
@@ -46,7 +39,7 @@ export default function Invoices() {
 
   const sendEmailMutation = useMutation({
     mutationFn: (id: number) =>
-      fetch(`${API}/email/send-invoice/${id}`, {
+      fetch(`${API_URL}/email/send-invoice/${id}`, {
         method: 'POST',
         headers: authHeaders(token),
       }).then((r) => {
@@ -82,9 +75,7 @@ export default function Invoices() {
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Fakturaer</h1>
-        <Link to="/create" className="btn-primary">
-          + Opret faktura
-        </Link>
+        <Link to="/create" className="btn-primary">+ Opret faktura</Link>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
@@ -98,11 +89,7 @@ export default function Invoices() {
             className="input pl-10"
           />
         </div>
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="input w-full sm:w-auto"
-        >
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input w-full sm:w-auto">
           <option value="all">Alle</option>
           <option value="unpaid">Ubetalte</option>
           <option value="paid">Betalte</option>
@@ -137,59 +124,30 @@ export default function Invoices() {
                     <td className="py-3 px-4 text-right font-medium">
                       {Number(inv.total).toLocaleString('da-DK', { minimumFractionDigits: 2 })} DKK
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <StatusCell status={inv.status} dueDate={inv.due_date} />
-                    </td>
-                    <td className="py-3 px-4 text-right text-gray-500">
-                      {new Date(inv.due_date).toLocaleDateString('da-DK')}
-                    </td>
+                    <td className="py-3 px-4 text-center"><StatusCell status={inv.status} dueDate={inv.due_date} /></td>
+                    <td className="py-3 px-4 text-right text-gray-500">{new Date(inv.due_date).toLocaleDateString('da-DK')}</td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => {
-                            setSendingId(inv.id);
-                            sendEmailMutation.mutate(inv.id);
-                          }}
+                          onClick={() => { setSendingId(inv.id); sendEmailMutation.mutate(inv.id); }}
                           disabled={sendEmailMutation.isPending && sendingId === inv.id}
                           className="p-1.5 rounded-md hover:bg-blue-100 text-blue-600"
                           title="Send faktura via e-mail"
-                        >
-                          <Send size={16} />
-                        </button>
-                        <a
-                          href={`${API}/pdf/generate/${inv.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-                          title="Download PDF"
-                        >
+                        ><Send size={16} /></button>
+                        <a href={`${API_URL}/pdf/generate/${inv.id}`} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500" title="Download PDF">
                           <Download size={16} />
                         </a>
                         {inv.status === 'unpaid' && (
-                          <button
-                            onClick={() => statusMutation.mutate({ id: inv.id, status: 'paid' })}
-                            className="p-1.5 rounded-md hover:bg-green-100 text-green-600"
-                            title="Marker som betalt"
-                          >
+                          <button onClick={() => statusMutation.mutate({ id: inv.id, status: 'paid' })} className="p-1.5 rounded-md hover:bg-green-100 text-green-600" title="Marker som betalt">
                             <CheckCircle size={16} />
                           </button>
                         )}
                         {inv.status === 'paid' && (
-                          <button
-                            onClick={() => statusMutation.mutate({ id: inv.id, status: 'unpaid' })}
-                            className="p-1.5 rounded-md hover:bg-yellow-100 text-yellow-600"
-                            title="Marker som ubetalt"
-                          >
+                          <button onClick={() => statusMutation.mutate({ id: inv.id, status: 'unpaid' })} className="p-1.5 rounded-md hover:bg-yellow-100 text-yellow-600" title="Marker som ubetalt">
                             <Clock size={16} />
                           </button>
                         )}
-                        <button
-                          onClick={() => {
-                            if (confirm('Slet faktura?')) deleteMutation.mutate(inv.id);
-                          }}
-                          className="p-1.5 rounded-md hover:bg-red-100 text-red-600"
-                          title="Slet"
-                        >
+                        <button onClick={() => { if (confirm('Slet faktura?')) deleteMutation.mutate(inv.id); }} className="p-1.5 rounded-md hover:bg-red-100 text-red-600" title="Slet">
                           <Trash2 size={16} />
                         </button>
                       </div>
@@ -208,20 +166,8 @@ export default function Invoices() {
 function StatusCell({ status, dueDate }: { status: string; dueDate: string }) {
   const isLate = status === 'unpaid' && new Date(dueDate) < new Date();
   if (status === 'paid')
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-        <CheckCircle size={12} /> Betalt
-      </span>
-    );
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700"><CheckCircle size={12} /> Betalt</span>;
   if (isLate)
-    return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700">
-        <AlertTriangle size={12} /> Forfalden
-      </span>
-    );
-  return (
-    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
-      <Clock size={12} /> Afventer
-    </span>
-  );
+    return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700"><AlertTriangle size={12} /> Forfalden</span>;
+  return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700"><Clock size={12} /> Afventer</span>;
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { FileText, LayoutDashboard, Users, Settings, Menu, X, PlusCircle, LogOut, User } from 'lucide-react';
+import { FileText, LayoutDashboard, Users, Settings, Menu, X, PlusCircle, LogOut, User, BarChart3, CreditCard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: '/invoices', label: 'Fakturaer', icon: FileText },
   { to: '/create', label: 'Opret', icon: PlusCircle },
   { to: '/customers', label: 'Kunder', icon: Users },
+  { to: '/reports', label: 'Rapporter', icon: BarChart3 },
   { to: '/settings', label: 'Indstillinger', icon: Settings },
 ];
 
@@ -44,6 +45,9 @@ export default function Navbar() {
             ))}
             {user ? (
               <div className="flex items-center gap-3 ml-2 pl-2 border-l border-white/20">
+                <span className="text-xs px-2 py-1 rounded bg-white/10 uppercase tracking-wider">
+                  {user.plan === 'pro' ? 'Pro' : 'Free'}
+                </span>
                 <span className="text-sm text-white/80 flex items-center gap-1">
                   <User size={14} />
                   {user.email}

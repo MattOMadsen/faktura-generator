@@ -7,6 +7,7 @@ import Invoices from './pages/Invoices';
 import CreateInvoice from './pages/CreateInvoice';
 import Customers from './pages/Customers';
 import Settings from './pages/Settings';
+import Reports from './pages/Reports';
 import Login from './pages/Login';
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ function AppRoutes() {
       <Route path="/create" element={<PrivateRoute><CreateInvoice /></PrivateRoute>} />
       <Route path="/customers" element={<PrivateRoute><Customers /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+      <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
     </Routes>
   );
 }

@@ -7,6 +7,10 @@ require('dotenv').config();
 
 const app = express();
 app.use(cors());
+
+// Stripe webhook skal bruge raw body
+app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json());
 
 // PostgreSQL opsætning
@@ -42,6 +46,11 @@ app.use('/api/customers', require('./routes/customers'));
 app.use('/api/pdf', require('./routes/pdf').router);
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/email', require('./routes/email'));
+app.use('/api/reports', require('./routes/reports'));
+app.use('/api/stripe', require('./routes/stripe'));
+
+// Health check
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
 // Start server
 const PORT = process.env.PORT || 5000;
